@@ -21,7 +21,7 @@
                 "-lgdi32",
                 "-luser32",
                 "-lshell32",
-                "-lglew32s"
+                "-lglad"
             ],
             "problemMatcher": ["$gcc"]
         },
