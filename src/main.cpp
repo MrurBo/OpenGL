@@ -34,7 +34,7 @@ void render()
     second argument: the index of the vertex array
     third argument: the number of vertices to draw
   */
-  glDrawArrays(GL_TRIANGLES, 0, 3);
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 std::string readFile(std::string path)
@@ -151,24 +151,33 @@ int main() {
   // Each vertex has 3 attributes : x, y, z
   float vertices[] = {
     -.5f, -.5f, 0,
-    .5f, -.5f, 0,
-    0, .5f, 0
+    -.5f, .5f, 0,
+    .5f, .5f, 0,
+    .5f, -.5f, 0
+  };
+
+  unsigned int indices[] = {
+    0, 3, 2,
+    2, 1, 0
   };
 
   // Generate vertex buffer, vertex attribute array
-  unsigned int vbo, vao;
+  unsigned int vbo, vao, ebo;
   glGenVertexArrays(1, &vao);
   glGenBuffers(1, &vbo);
+  glGenBuffers(1, &ebo);
 
+  // Bind Vertex Array
   glBindVertexArray(vao);
 
-  // Bind buffer to its buffer type
+  // Bind buffers to its buffer type
   /*
     OpenGL allows you to bind multiple buffers as long as they have separate buffer types
   */
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
 
-  // Copies the vertex data to the buffer bound to the `GL_ARRAY_BUFFER` type
+  // Copies the data to the buffer bound to the its respective buffer type
   /*
     first argument: type of the buffer we want to copy data into
     second argument: size of the data in bytes
@@ -179,6 +188,7 @@ int main() {
       - GL_DYNAMIC_DRAW: the data is changed a lot and used many times.
   */
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
   // Tells OpenGL the layout of out vertex data
   /*
