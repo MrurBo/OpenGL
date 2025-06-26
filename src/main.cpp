@@ -12,7 +12,7 @@ const std::string fragmentShaderPath = "shaders/fragment-shader.glsl";
 static unsigned int compileShader(unsigned int type, const std::string& source)
 {
     unsigned int id = glCreateShader(type);
-    const char* src = source.c_str();
+    const char *src = source.c_str();
     glShaderSource(id, 1, &src, nullptr);
     glCompileShader(id);
 
@@ -69,11 +69,11 @@ static std::string readFile(std::string path)
 
 int main(void)
 {
-    GLFWwindow* window;
+    GLFWwindow *window;
 
     if (!glfwInit()) return -1;
 
-    window = glfwCreateWindow(960, 540, "OpenGL Project", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "OpenGL Project", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
