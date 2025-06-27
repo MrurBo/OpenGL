@@ -1,40 +1,40 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "build",
-            "type": "shell",
-            "command": "g++",
-            "args": [
-                "-std=c++23",
-                "-O3",
-                "-flto",
-                "-g",
-                "src\\main.cpp",
-                "-o",
-                "bin\\main.exe",
-
-                "-I${workspaceFolder}\\include",
-                "-L${workspaceFolder}\\lib",
-                "-lglfw3",
-                "-lopengl32",
-                "-lgdi32",
-                "-luser32",
-                "-lshell32",
-                "-lglad"
-            ],
-            "problemMatcher": ["$gcc"]
-        },
-        {
-            "label": "run",
-            "type": "shell",
-            "command": "bin\\main.exe",
-            "args": [],
-            "dependsOn": ["build"],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
-        }
-    ]
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-std=c++23",
+        "-O3",
+        "-flto",
+        "-g",
+        "src\\main.cpp",
+        "-o",
+        "bin\\main.exe",
+        
+        "-I${workspaceFolder}\\include",
+        "-L${workspaceFolder}\\lib",
+        "-lglfw3",
+        "-lopengl32",
+        "-lgdi32",
+        "-luser32",
+        "-lshell32",
+        "-lglad"
+      ],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "run",
+      "type": "shell",
+      "command": "bin\\main.exe",
+      "args": [],
+      "dependsOn": ["build"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+  ]
 }

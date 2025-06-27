@@ -3,11 +3,20 @@
 */
 
 #include <glad/glad.h>
+
 #include <GLFW/glfw3.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <cmath>
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -21,20 +30,6 @@ void update(GLFWwindow* window)
   */
 
   if (glfwGetKey(window, GLFW_KEY_ESCAPE)) glfwSetWindowShouldClose(window, true);
-}
-
-void render()
-{
-  // Clear screen using clear color
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  // Draw Vertex Arrays
-  /*
-    frist argument: the type of primitive we would like to draw
-    second argument: the index of the vertex array
-    third argument: the number of vertices to draw
-  */
-  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 std::string readFile(std::string path)
@@ -123,7 +118,7 @@ int main() {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   // Initialise window + check for errors + make window current context
-  GLFWwindow* window = glfwCreateWindow(800, 600,"Learn OpenGL", NULL, NULL);
+  GLFWwindow* window = glfwCreateWindow(800, 800,"Learn OpenGL", NULL, NULL);
   if (window == NULL)
   {
     std::cerr << "Failed to create GLFW window" << std::endl;
@@ -139,7 +134,7 @@ int main() {
   }
 
   // Tell OpenGL the window size so thet we can use normalized device coordinates
-  glViewport(0, 0, 800, 600);
+  glViewport(0, 0, 800, 800);
 
   // Resize window if window size changes
   glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
@@ -148,12 +143,12 @@ int main() {
   glClearColor(.5f, .5f, .5f, 1);
 
   // Define vertices
-  // Each vertex has 3 attributes : x, y, z
+  // Each vertex has 5 attributes : x, y, z, u, v
   float vertices[] = {
-    -.5f, -.5f, 0,
-    -.5f, .5f, 0,
-    .5f, .5f, 0,
-    .5f, -.5f, 0
+    -.5f, -.5f, 0, 0, 0,
+    -.5f, .5f, 0, 0, 1,
+    .5f, .5f, 0, 1, 1,
+    .5f, -.5f, 0, 1, 0
   };
 
   unsigned int indices[] = {
@@ -199,8 +194,58 @@ int main() {
     fifth argument: the space between the start of two consecutive vertex attributes in the array in bytes (also known as stride)
     sixth argument: offset of where the position data begins (it has to be cast into a void pointer for some reason, idk why)
   */
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
   glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+  glEnableVertexAttribArray(1);
+
+  // Generate Texture
+  unsigned int texture;
+  glGenTextures(1, &texture);
+
+  // Clamp the texture so that anything outside the texture will be a user defined color
+  /*
+    first argument: texture target (21d, 2d, 3d, etc...)
+    second argument: which axis we are configuring (axes: s, t, r(if using 3d textures))
+    third argument: texture wrapping mode we would like
+  */
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+  // Specify user defined border color
+  float borderColor[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+  // Specify the filtering mode
+  /*
+    the filtering mode the color is at a point on the texture relative to the colors of the four texels that surround it
+    nearest neighbour or point filtering returns the color of the nearest texel
+    bilinear filtering linearly interpolates between the four colors to get a ratiod mix of the four
+  */
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // Bind texture
+  glBindTexture(GL_TEXTURE_2D, texture);
+
+  // Read image file
+  int width, height, numChannels;
+  unsigned char* imageData = stbi_load("textures/crate-texture1024x1024.png", &width, &height, &numChannels, 0);
+
+  // Error handling
+  if (imageData)
+  {
+    // TODO: Explain this
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, imageData);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+  else
+  {
+    std::cerr << "Failed to load texture" << std::endl;
+  }
+
+  // Cleanup
+  stbi_image_free(imageData);
 
   // Compile and link shaders
   unsigned int vertexShader = compileShader(GL_VERTEX_SHADER, readFile("shaders/vertex-shader.glsl"));
@@ -214,8 +259,31 @@ int main() {
   {
     update(window);
 
-    // rendering commands go here:
-    render();
+      // Clear screen using clear color
+      glClear(GL_COLOR_BUFFER_BIT);
+
+      // Initialize transform matrix
+      glm::mat4 trans = glm::mat4(1);
+
+      // Rotate transform matrix
+      trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0, 0, 1));
+
+      // Create uniform for that matrix
+      /*
+        first argument: uniform location
+        second argument: how many matrices we would like to send
+        third argument: if we would like to transpose out matrix (swap columns and rows)
+        fourth argument: convert to OpenGL format
+      */
+      glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_transformMatrix"), 1, GL_FALSE, glm::value_ptr(trans));
+
+      // Draw Vertex Arrays
+      /*
+        frist argument: the type of primitive we would like to draw
+        second argument: the index of the vertex array
+        third argument: the number of vertices to draw
+      */
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
     // Swaps front and back buffers
     /*
