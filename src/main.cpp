@@ -142,13 +142,53 @@ int main() {
   // Set clear color
   glClearColor(.5f, .5f, .5f, 1);
 
-  // Define vertices
+  // Enable depth test
+  glEnable(GL_DEPTH_TEST);
+
+  // Define vertices of a cube
   // Each vertex has 5 attributes : x, y, z, u, v
   float vertices[] = {
-    -.25f, -.25f, 0, 0, 0,
-    -.25f, .25f, 0, 0, 1,
-    .25f, .25f, 0, 1, 1,
-    .25f, -.25f, 0, 1, 0
+    -.25f, -.25f, -.25f,  0, 0,
+     .25f, -.25f, -.25f,  1, 0,
+     .25f, .25f, -.25f,  1, 1,
+     .25f, .25f, -.25f,  1, 1,
+    -.25f, .25f, -.25f,  0, 1,
+    -.25f, -.25f, -.25f,  0, 0,
+
+    -.25f, -.25f, .25f,  0, 0,
+     .25f, -.25f, .25f,  1, 0,
+     .25f, .25f, .25f,  1, 1,
+     .25f, .25f, .25f,  1, 1,
+    -.25f, .25f, .25f,  0, 1,
+    -.25f, -.25f, .25f,  0, 0,
+
+    -.25f, .25f, .25f,  1, 0,
+    -.25f, .25f, -.25f,  1, 1,
+    -.25f, -.25f, -.25f,  0, 1,
+    -.25f, -.25f, -.25f,  0, 1,
+    -.25f, -.25f, .25f,  0, 0,
+    -.25f, .25f, .25f,  1, 0,
+
+     .25f, .25f, .25f,  1, 0,
+     .25f, .25f, -.25f,  1, 1,
+     .25f, -.25f, -.25f,  0, 1,
+     .25f, -.25f, -.25f,  0, 1,
+     .25f, -.25f, .25f,  0, 0,
+     .25f, .25f, .25f,  1, 0,
+
+    -.25f, -.25f, -.25f,  0, 1,
+     .25f, -.25f, -.25f,  1, 1,
+     .25f, -.25f, .25f,  1, 0,
+     .25f, -.25f, .25f,  1, 0,
+    -.25f, -.25f, .25f,  0, 0,
+    -.25f, -.25f, -.25f,  0, 1,
+
+    -.25f, .25f, -.25f,  0, 1,
+     .25f, .25f, -.25f,  1, 1,
+     .25f, .25f, .25f,  1, 0,
+     .25f, .25f, .25f,  1, 0,
+    -.25f, .25f, .25f,  0, 0,
+    -.25f, .25f, -.25f,  0, 1
   };
 
   unsigned int indices[] = {
@@ -259,55 +299,42 @@ int main() {
   {
     update(window);
 
-      // Clear screen using clear color
-      glClear(GL_COLOR_BUFFER_BIT);
+    // Get width and height of screen
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
 
-      // Initialize transform matrix
-      glm::mat4 trans = glm::mat4(1);
+    // Clear color and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      /**
-       * A hard thing to get used to in OpenGL is that the last transformation you write in code is applied first
-       * This is because matrices are multiplied from right to left
-       * 
-       * Say you applied a rotation, then a translation,
-       * the program writes it down as:
-       * --------------------------------------------------------------------------------------------------------
-       * | transform_matrx = R * T
-       * --------------------------------------------------------------------------------------------------------
-       * and if you multiply that with a vector, it becomes:
-       * --------------------------------------------------------------------------------------------------------
-       * | vector = R * T * v
-       * --------------------------------------------------------------------------------------------------------
-       * ... which is equal to ...
-       * --------------------------------------------------------------------------------------------------------
-       * | R * (T * v)
-       * --------------------------------------------------------------------------------------------------------
-       * 
-       * It's hard to remember, but that's just how it is `\_('_')_/`
-       */
+    // initialize matrices using identity matrices
+    glm::mat4 model = glm::mat4(1);
+    glm::mat4 view = glm::mat4(1);
+    glm::mat4 projection = glm::mat4(1);
 
-      // Translate transform matrix
-      trans = glm::translate(trans, glm::vec3(std::sin(glfwGetTime() * 1.5) / 2, 0.0, 0.0));
+    // Transform the matrices to fit our needs
+    // If you don't know what these matrices do, unfortunately that is a big topic and i cannot explain it without it being over 50 lines.
+    model = glm::rotate(model, (float)glfwGetTime() * glm::radians(60.f), glm::vec3(.5f, 1, .25f));
+    view = glm::translate(view, glm::vec3(0, 0, -1.5));
+    projection = glm::perspective(glm::radians(60.f), width / (float)height, 0.1f, 100.f);
 
-      // Rotate transform matrix
-      trans = glm::rotate(trans, (float)glfwGetTime(), glm::vec3(0, 0, 1));
+    // Create uniform for the matrices
+    /**
+     * first argument: uniform location
+     * second argument: how many matrices we would like to send
+     * third argument: if we would like to transpose out matrix (swap columns and rows)
+     * fourth argument: convert to OpenGL format
+     */
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_model"), 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_projection"), 1, GL_FALSE, glm::value_ptr(projection));
 
-      // Create uniform for that matrix
-      /**
-       * first argument: uniform location
-       * second argument: how many matrices we would like to send
-       * third argument: if we would like to transpose out matrix (swap columns and rows)
-       * fourth argument: convert to OpenGL format
-       */
-      glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "u_transformMatrix"), 1, GL_FALSE, glm::value_ptr(trans));
-
-      // Draw Vertex Arrays
-      /**
-       * frist argument: the type of primitive we would like to draw
-       * second argument: the index of the vertex array
-       * third argument: the number of vertices to draw
-       */
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    // Draw Vertex Arrays
+    /**
+     * frist argument: the type of primitive we would like to draw
+     * second argument: the index of the vertex array
+     * third argument: the number of vertices to draw
+     */
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 
     // Swaps front and back buffers
     /**
